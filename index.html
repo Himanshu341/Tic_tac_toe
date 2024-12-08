@@ -32,7 +32,7 @@
         text-align: center;
         transition: transform 0.3s ease;
         font-size: 20px;
-        margin: 15px 10px;
+        margin: 15px 0px;
       }
 
       .tic-tac-toe {
@@ -125,6 +125,14 @@
         color: gold;
         text-shadow: 0px 0px 10px rgba(255, 255, 0, 0.8);
       }
+
+      #game-status.new-game {
+        animation: flashWinnerText 1s ease-out infinite;
+        font-size: 2rem;
+        font-weight: bold;
+        color: cyan;
+        text-shadow: 0px 0px 10px rgba(0, 255, 255, 0.8);
+      }
     </style>
   </head>
 
@@ -151,6 +159,11 @@
       </div>
     </div>
 
+    <!-- Audio files -->
+    <audio id="click-sound" src="./tap_sound.mp3"></audio>
+    <audio id="win-sound" src="./winning_sound.mp3"></audio>
+    <audio id="reset-sound" src="reset-sound.mp3"></audio>
+
     <script>
       const cells = document.querySelectorAll(".cell");
       const resetButton = document.getElementById("reset-button");
@@ -170,11 +183,23 @@
         [3, 5, 7],
       ];
 
+      // Load sounds
+      const clickSound = document.getElementById("click-sound");
+      const winSound = document.getElementById("win-sound");
+      const resetSound = document.getElementById("reset-sound");
+
+      function stopSound(audioElement) {
+        audioElement.pause(); // Pause the sound
+        audioElement.currentTime = 0; // Reset to the beginning
+      }
+
       function handleCellClick(event) {
         const cellEvent = event.target;
         const cellIndex = cellEvent.id.split("-")[1];
         if (gameIsActive && cellEvent.textContent === "") {
           cellEvent.textContent = currentPlayer;
+          clickSound.play(); // Play click sound
+
           const gameBoard = Array.from(cells).map((cell) => cell.textContent);
           const winningCombination = winningCombinations.find((combination) =>
             combination.every((index) => gameBoard[index - 1] === currentPlayer)
@@ -187,12 +212,14 @@
             gameStatus.textContent = `🎉 Player ${currentPlayer} Wins! 🎉`;
             gameStatus.classList.add("winner");
 
+            winSound.play(); // Play winning sound
             triggerConfetti();
+            winSound.onended = resetGame; // Reset game when winning sound finishes
           } else if (gameBoard.includes("")) {
             console.log("Game is not over yet!");
           } else {
             gameIsActive = false;
-            gameStatus.textContent = "It's a Draw!";
+            gameStatus.textContent = "It's a Draw! 🤔";
           }
 
           currentPlayer = currentPlayer === "X" ? "O" : "X";
@@ -202,13 +229,18 @@
       function resetGame() {
         gameIsActive = true;
         currentPlayer = "X";
-        gameStatus.textContent = `Player ${currentPlayer}'s turn`;
-        gameStatus.classList.remove("winner");
+        stopSound(winSound);
+        gameStatus.textContent = `Start New Game 🏆`;
+        gameStatus.classList.add("new-game");
+        setTimeout(() => {
+          gameStatus.classList.remove("new-game");
+        }, 2000); // Remove the "new game" animation after 2 seconds
         cells.forEach((cell) => {
           cell.textContent = "";
           cell.classList.remove("winning-cell");
         });
         removeConfetti();
+        resetSound.play(); // Play reset sound
       }
 
       function triggerConfetti() {
@@ -217,7 +249,18 @@
           confettiPiece.classList.add("confetti");
           const randomLeft = Math.random() * 100;
           const randomDelay = Math.random() * 2 + 0.1;
-          const colors = ["red", "blue", "green", "yellow", "pink", "orange", "purple", "cyan", "lime", "gold"];
+          const colors = [
+            "red",
+            "blue",
+            "green",
+            "yellow",
+            "pink",
+            "orange",
+            "purple",
+            "cyan",
+            "lime",
+            "gold",
+          ];
           const randomColor = colors[Math.floor(Math.random() * colors.length)];
           confettiPiece.style.left = `${randomLeft}%`;
           confettiPiece.style.animationDelay = `${randomDelay}s`;
@@ -231,8 +274,9 @@
         confettiPieces.forEach((piece) => piece.remove());
       }
 
-      cells.forEach((cell) => cell.addEventListener("click", handleCellClick));
       resetButton.addEventListener("click", resetGame);
+
+      cells.forEach((cell) => cell.addEventListener("click", handleCellClick));
     </script>
   </body>
 </html>
